@@ -198,7 +198,8 @@ int main() {
 	Eigen::Vector3f m_n = (pb - pa).cross(pc - pa);
 	float cosineValue= m_n.dot(v_n_after-v_a) / (m_n.norm()*(v_n_after-v_a).norm());
 	float beta = std::acos(cosineValue);
-	if (m_n[2]<0)
+	Eigen::Vector3f o_n = (v_n_after - v_a).cross(m_n);
+	if (o_n[2]<0)
 	{
 		beta = -beta;
 	}
