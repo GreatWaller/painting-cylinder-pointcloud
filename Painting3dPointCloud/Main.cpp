@@ -9,6 +9,61 @@
 #include <vector> 
 #include <Eigen/Dense>
 
+struct CylinderModel
+{
+	Eigen::Vector3f abovePoint;
+	Eigen::Vector3f belowPoint;
+	float r;
+	float h;
+	int div;
+
+};
+
+int drawCylinder(pcl::PointCloud<pcl::PointXYZ>* cloud, CylinderModel& model,bool needCircle=0) {
+	int total = 0;
+
+	Eigen::Vector3f cylinder_centerline_after = model.abovePoint-model.belowPoint;
+	Eigen::Vector3f cylinder_centerline_origin(0., 0., 1);
+	Eigen::Vector3f cylinder_traslation = model.belowPoint;
+	//旋转角
+	float l = std::sqrt(cylinder_centerline_after[0] * cylinder_centerline_after[0] + cylinder_centerline_after[1] * cylinder_centerline_after[1] + cylinder_centerline_after[2] * cylinder_centerline_after[2]);
+	float cylinder_angle = std::acos(cylinder_centerline_after[2] / l);
+
+	//法向量:既作为转轴，同时可判断夹角是否为逆时针
+	Eigen::Vector3f cylinder_axis = cylinder_centerline_origin.cross(cylinder_centerline_after);
+	if (cylinder_axis[2] < 0.0)
+		cylinder_angle = -cylinder_angle;
+	Eigen::AngleAxisf cylinder_angle_axis(cylinder_angle, cylinder_axis.normalized());
+	Eigen::Matrix3f cylinder_rotation = cylinder_angle_axis.toRotationMatrix();
+
+	for (size_t j = 0; j <= model.div; j++)
+	{
+		for (size_t i = 0; i <= model.div; i++)
+		{
+			float alpha = 2. * M_PI * i / model.div;
+			float x = model.r * sin(alpha);
+			float y = model.r * cos(alpha);
+			float z = model.h * j / model.div;
+
+			Eigen::Vector3f t(x, y, z);
+			Eigen::Vector3f tt = cylinder_rotation * t + cylinder_traslation;
+
+			pcl::PointXYZ point;
+			point.x = tt[0];
+			point.y = tt[1];
+			point.z = tt[2];
+			++total;
+			cloud->points.push_back(point);
+		}
+	}
+	if (needCircle)
+	{
+
+	}
+
+	return total;
+}
+
 
 int main() {
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
@@ -195,6 +250,7 @@ int main() {
 	Eigen::Vector3f pb(x1, y1, z1);
 	Eigen::Vector3f pc(x2, y2, z2);
 
+	//1 钩子与绝缘子一体
 	Eigen::Vector3f m_n = (pb - pa).cross(pc - pa);
 	float cosineValue= m_n.dot(v_n_after-v_a) / (m_n.norm()*(v_n_after-v_a).norm());
 	float beta = std::acos(cosineValue);
@@ -247,7 +303,37 @@ int main() {
 		++num_points;
 		cloud->points.push_back(r_point);*/
 	}
+	//2 钩子单独画 (0,0,1)为钩子平面初始法向量
+	Eigen::Vector3f hook_after_ahead_n = (pb - pa).cross(pc - pa).normalized();
+	Eigen::Vector3f hook_before_ahead_n(0, 0, 1);
+	Eigen::Vector3f hook_axis = hook_before_ahead_n.cross(hook_after_ahead_n);
+	float hook_angle =std::acos(hook_before_ahead_n.dot(hook_after_ahead_n));
+	if (hook_axis[2]<0)
+	{
+		hook_angle = -hook_angle;
+	}
+	Eigen::AngleAxisf hook_angel_axis(hook_angle, hook_axis);
+	auto hook_rotation = hook_angel_axis.toRotationMatrix();
+	auto hook_translation = (pa + pc) / 2;
 
+	//int dd = 10;
+	for (auto& p : hooks) {
+		for (size_t i = 0; i < dd; i++)
+		{
+			float h_s = i < dd / 2 ? std::asin((i + 1) / ((float)dd / 2)) * (d_between_hooks / M_PI) : (M_PI - std::asin((dd - i - 1) / (float)dd * 2)) * (d_between_hooks / M_PI);
+
+			Eigen::Vector3f t_t_hoot(0.112, -d_between_hooks / 2 + h_s, -0.053);
+			Eigen::Vector3f l_t = hook_rotation * (p + t_t_hoot) + hook_translation;
+
+			pcl::PointXYZ point;
+			point.x = l_t[0];
+			point.y = l_t[1];
+			point.z = l_t[2];
+
+			++num_points;
+			cloud->points.push_back(point);
+		}
+	}
 	
 	//sphere
 	//for (size_t j = 1; j <= div; j++)
@@ -275,6 +361,14 @@ int main() {
 	//}
 	
 
+	CylinderModel model;
+	model.belowPoint=Eigen::Vector3f(2., 2., 2.);
+	model.abovePoint = Eigen::Vector3f(3., 4., 5.);
+	model.div = 100;
+	model.h = 0.2f;
+	model.r = .1f;
+	int num = drawCylinder(cloud.get(), model);
+	num_points += num;
 
 	// Fill in the cloud data  
 	cloud->width = num_points;;
