@@ -11,7 +11,7 @@ struct CylinderModel
 	Eigen::Vector3f belowPoint;
 	float r;
 	float h;
-	int div;
+	int div=128;
 	int vane_count;
 	float vane_width;
 	int vane_div;
@@ -21,7 +21,7 @@ struct CircleModel {
 	//单位法向量
 	Eigen::Vector3f circleCenter;
 	Eigen::Vector3f circelNorm;
-	int div;
+	int div=128;
 	float r;
 };
 
@@ -33,7 +33,17 @@ struct HookModel
 	float line_length = 1.f;
 	float d;
 	float d_between_hooks;
-	int div;
+	int div=128;
+};
+
+struct SphereModel
+{
+	Eigen::Vector3f center;
+	float radius;
+	uint8_t r=255;
+	uint8_t g=255;
+	uint8_t b=255;
+	int div=128;
 };
 
 int drawCylinder(pcl::PointCloud<pcl::PointXYZRGB>* cloud, CylinderModel& model, bool needCircle = 0) {
@@ -219,6 +229,34 @@ int drawHook(pcl::PointCloud<pcl::PointXYZRGB>* cloud, HookModel& model) {
 			point.y = l_t[1];
 			point.z = l_t[2];
 
+			++count;
+			cloud->points.push_back(point);
+			cloud->width += count;
+		}
+	}
+	return count;
+}
+
+int drawSphere(pcl::PointCloud<pcl::PointXYZRGB>* cloud, SphereModel& model) {
+	int count = 0;
+	for (size_t j = 1; j <= model.div; j++)
+	{
+		float z = 2. * model.radius * j / model.div - model.radius;
+
+		for (size_t i = 1; i <= model.div; i++)
+		{
+			float alpha = 2. * M_PI * i / model.div;
+			float rPrime = sqrt(model.radius * model.radius - z * z);
+			float x = rPrime * sin(alpha);
+			float y = rPrime * cos(alpha);
+
+			pcl::PointXYZRGB point;
+			point.r = model.r;
+			point.g = model.g;
+			point.b = model.b;
+			point.x = x+model.center[0];
+			point.y = y+model.center[1];
+			point.z = z+model.center[2];
 			++count;
 			cloud->points.push_back(point);
 			cloud->width += count;

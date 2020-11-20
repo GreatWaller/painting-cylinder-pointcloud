@@ -323,6 +323,11 @@ int main() {
 	//	}
 	//	
 	//}
+
+	SphereModel sphere;
+	sphere.center=Eigen::Vector3f(2, 2, 2);
+	sphere.radius = 0.1;
+	drawSphere(cloud.get(), sphere);
 	
 
 	CylinderModel model;
