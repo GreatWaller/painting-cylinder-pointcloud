@@ -10,7 +10,7 @@
 
 
 int main() {
-	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
 	
 	
 	//pcl::io::savePCDFileASCII("txt2pcd_bunny1.pcd", *cloud);
@@ -26,14 +26,39 @@ int main() {
 
 	//hook
 	HookModel hookModel;
-	//hookModel.line_length = 0.5f;
-	hookModel.d = 0.2f;
-	hookModel.div = 64;
-	hookModel.d_between_hooks = 0.2f;
-	hookModel.p_a_left = Eigen::Vector3f(-1, -1, 1);
-	hookModel.p_b_left = Eigen::Vector3f(-1, -1, 0);
-	hookModel.p_c_right = Eigen::Vector3f(0, 0, 1);
+	hookModel.line_length = .0474f;
+	hookModel.d = .013f;
+	hookModel.d_between_hooks = 0.05f;
+	hookModel.div = 32;
+	//hookModel.p_a_left = Eigen::Vector3f(-1, -1, 1);
+	//hookModel.p_b_left = Eigen::Vector3f(-1, -1, 0);
+	//hookModel.p_c_right = Eigen::Vector3f(0, 0, 1);
+	//hookModel.p_a_left = Eigen::Vector3f(0.168111652136, -0.0782769396901, 1.02063155174);
+	//hookModel.p_b_left = Eigen::Vector3f(0.18012085557, -0.0203807279468, 1.00563800335);
+	//hookModel.p_c_right = Eigen::Vector3f(0.215071111917, -0.0931823700666, 1.00292181969);
+	hookModel.p_a_left = Eigen::Vector3f(0.0191227793694, -0.121907807887, 1.24884688854);
+	hookModel.p_b_left = Eigen::Vector3f(0.0321926474571, -0.062327504158, 1.24945187569);
+	hookModel.p_c_right = Eigen::Vector3f(0.0596532225609, -0.132800757885, 1.21418249607);
 	drawHook(cloud.get(), hookModel);
+	pcl::PointXYZRGB point_a;
+	point_a.x = hookModel.p_a_left[0];
+	point_a.y = hookModel.p_a_left[1];
+	point_a.z = hookModel.p_a_left[2];
+	point_a.r = 255;
+	cloud->push_back(point_a);
+	pcl::PointXYZRGB point_b;
+	point_b.x = hookModel.p_b_left[0];
+	point_b.y = hookModel.p_b_left[1];
+	point_b.z = hookModel.p_b_left[2];
+	point_b.r = 255;
+	cloud->push_back(point_b);
+	pcl::PointXYZRGB point_c;
+	point_c.x = hookModel.p_c_right[0];
+	point_c.y = hookModel.p_c_right[1];
+	point_c.z = hookModel.p_c_right[2];
+	point_c.g = 255;
+	cloud->push_back(point_c);
+	num_points += 3;
 	//cylinder
 	float r = .025;
 	int div = 200;
@@ -77,7 +102,7 @@ int main() {
 			Eigen::Vector3f t(x, y, z);
 			Eigen::Vector3f tt = t_r * t + t_t;
 
-			pcl::PointXYZ point;
+			pcl::PointXYZRGB point;
 			point.x = tt[0];
 			point.y = tt[1];
 			point.z = tt[2];
@@ -103,7 +128,7 @@ int main() {
 
 				Eigen::Vector3f t(x, y, z);
 				Eigen::Vector3f tt = t_r * t + t_t;
-				pcl::PointXYZ point;
+				pcl::PointXYZRGB point;
 				point.x = tt[0];
 				point.y = tt[1];
 				point.z = tt[2];
@@ -125,7 +150,7 @@ int main() {
 	for (size_t i = 1; i <= div; i++)
 	{
 		float x = line_length * i / div;
-		pcl::PointXYZ point;
+		pcl::PointXYZRGB point;
 		point.x = x;
 		point.y = 0;
 		point.z = 0;
@@ -141,7 +166,7 @@ int main() {
 		float x = d * i / div + line_length;
 		float z = -std::sqrt((d / 2) * (d / 2) - (d * i / div-d/2) * (d * i / div - d / 2));
 		float y = 0;
-		pcl::PointXYZ point;
+		pcl::PointXYZRGB point;
 		point.x = x;
 		point.y = y;
 		point.z = z;
@@ -158,7 +183,7 @@ int main() {
 		float x = d * sin(alpha) + line_length;
 		float z = d * cos(alpha);
 		float y = 0;
-		pcl::PointXYZ point;
+		pcl::PointXYZRGB point;
 		point.x = x;
 		point.y = y;
 		point.z = z;
@@ -201,10 +226,6 @@ int main() {
 	float cosineValue= m_n.dot(v_n_after-v_a) / (m_n.norm()*(v_n_after-v_a).norm());
 	float beta = std::acos(cosineValue);
 	Eigen::Vector3f o_n = (v_n_after - v_a).cross(m_n);
-	if (o_n[2]<0)
-	{
-		beta = -beta;
-	}
 	Eigen::AngleAxisf aa_final(beta, v_n.normalized());
 	Eigen::Matrix3f t_r_hoot_final = aa_final.toRotationMatrix();
 
@@ -220,7 +241,7 @@ int main() {
 			Eigen::Vector3f t_t_hoot(0.112, -d_between_hooks / 2 + h_s, -0.053);
 			Eigen::Vector3f l_t = t_r_hoot_final*(t_r * (t_r_hoot * p + t_t_hoot)) + t_t;
 
-			pcl::PointXYZ point;
+			pcl::PointXYZRGB point;
 			point.x = l_t[0];
 			point.y = l_t[1];
 			point.z = l_t[2];
@@ -231,7 +252,7 @@ int main() {
 
 		/*Eigen::Vector3f l_t = t_r * (t_r_hoot * p + left_hook) + t_t;
 
-		pcl::PointXYZ point;
+		pcl::PointXYZRGB point;
 		point.x = l_t[0];
 		point.y = l_t[1];
 		point.z = l_t[2];
@@ -241,7 +262,7 @@ int main() {
 
 		Eigen::Vector3f r_t = t_r*(t_r_hoot*p + right_hook)+t_t;
 
-		pcl::PointXYZ r_point;
+		pcl::PointXYZRGB r_point;
 		r_point.x = r_t[0];
 		r_point.y = r_t[1];
 		r_point.z = r_t[2];
@@ -254,10 +275,7 @@ int main() {
 	Eigen::Vector3f hook_before_ahead_n(0, 0, 1);
 	Eigen::Vector3f hook_axis = hook_before_ahead_n.cross(hook_after_ahead_n);
 	float hook_angle =std::acos(hook_before_ahead_n.dot(hook_after_ahead_n));
-	if (hook_axis[2]<0)
-	{
-		hook_angle = -hook_angle;
-	}
+
 	Eigen::AngleAxisf hook_angel_axis(hook_angle, hook_axis);
 	auto hook_rotation = hook_angel_axis.toRotationMatrix();
 	auto hook_translation = (pa + pc) / 2;
@@ -271,7 +289,7 @@ int main() {
 			Eigen::Vector3f t_t_hoot(0.112, -d_between_hooks / 2 + h_s, -0.053);
 			Eigen::Vector3f l_t = hook_rotation * (p + t_t_hoot) + hook_translation;
 
-			pcl::PointXYZ point;
+			pcl::PointXYZRGB point;
 			point.x = l_t[0];
 			point.y = l_t[1];
 			point.z = l_t[2];
@@ -295,7 +313,7 @@ int main() {
 
 	//		
 
-	//		pcl::PointXYZ point;
+	//		pcl::PointXYZRGB point;
 	//		point.x = x;
 	//		point.y = y;
 	//		point.z = z;

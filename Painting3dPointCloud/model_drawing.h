@@ -36,7 +36,7 @@ struct HookModel
 	int div;
 };
 
-int drawCylinder(pcl::PointCloud<pcl::PointXYZ>* cloud, CylinderModel& model, bool needCircle = 0) {
+int drawCylinder(pcl::PointCloud<pcl::PointXYZRGB>* cloud, CylinderModel& model, bool needCircle = 0) {
 	int total = 0;
 
 	Eigen::Vector3f cylinder_centerline_after = model.abovePoint - model.belowPoint;
@@ -46,10 +46,10 @@ int drawCylinder(pcl::PointCloud<pcl::PointXYZ>* cloud, CylinderModel& model, bo
 	float l = std::sqrt(cylinder_centerline_after[0] * cylinder_centerline_after[0] + cylinder_centerline_after[1] * cylinder_centerline_after[1] + cylinder_centerline_after[2] * cylinder_centerline_after[2]);
 	float cylinder_angle = std::acos(cylinder_centerline_after[2] / l);
 
-	//法向量:既作为转轴，同时可判断夹角是否为逆时针
+	//法向量:既作为转轴，同时可判断夹角是否为逆时针(应该不需要判断)
 	Eigen::Vector3f cylinder_axis = cylinder_centerline_origin.cross(cylinder_centerline_after);
-	if (cylinder_axis[2] < 0.0)
-		cylinder_angle = -cylinder_angle;
+	//if (cylinder_axis[2] < 0.0)
+	//	cylinder_angle = -cylinder_angle;
 	Eigen::AngleAxisf cylinder_angle_axis(cylinder_angle, cylinder_axis.normalized());
 	Eigen::Matrix3f cylinder_rotation = cylinder_angle_axis.toRotationMatrix();
 
@@ -65,7 +65,7 @@ int drawCylinder(pcl::PointCloud<pcl::PointXYZ>* cloud, CylinderModel& model, bo
 			Eigen::Vector3f t(x, y, z);
 			Eigen::Vector3f tt = cylinder_rotation * t + cylinder_traslation;
 
-			pcl::PointXYZ point;
+			pcl::PointXYZRGB point;
 			point.x = tt[0];
 			point.y = tt[1];
 			point.z = tt[2];
@@ -89,7 +89,7 @@ int drawCylinder(pcl::PointCloud<pcl::PointXYZ>* cloud, CylinderModel& model, bo
 
 					Eigen::Vector3f t(x, y, z);
 					Eigen::Vector3f tt = cylinder_rotation * t + cylinder_traslation;
-					pcl::PointXYZ point;
+					pcl::PointXYZRGB point;
 					point.x = tt[0];
 					point.y = tt[1];
 					point.z = tt[2];
@@ -103,15 +103,12 @@ int drawCylinder(pcl::PointCloud<pcl::PointXYZ>* cloud, CylinderModel& model, bo
 	return total;
 }
 
-int drawCircle(pcl::PointCloud<pcl::PointXYZ>* cloud, CircleModel& model) {
+int drawCircle(pcl::PointCloud<pcl::PointXYZRGB>* cloud, CircleModel& model) {
 	int count = 0;
 	Eigen::Vector3f circle_norm_before(0, 0, 1);
 	float angle = std::acos(circle_norm_before.dot(model.circelNorm));
 	Eigen::Vector3f axis = circle_norm_before.cross(model.circelNorm);
-	if (axis[2] < 0)
-	{
-		angle = -angle;
-	}
+
 	Eigen::AngleAxisf angleAxis(angle, axis);
 	Eigen::Matrix3f rotation = angleAxis.toRotationMatrix();
 	Eigen::Vector3f translation = model.circleCenter;
@@ -126,7 +123,7 @@ int drawCircle(pcl::PointCloud<pcl::PointXYZ>* cloud, CircleModel& model) {
 		Eigen::Vector3f t(x, y, z);
 		Eigen::Vector3f tt = rotation * t + translation;
 
-		pcl::PointXYZ point;
+		pcl::PointXYZRGB point;
 		point.x = tt[0];
 		point.y = tt[1];
 		point.z = tt[2];
@@ -137,7 +134,7 @@ int drawCircle(pcl::PointCloud<pcl::PointXYZ>* cloud, CircleModel& model) {
 	return count;
 }
 
-int drawHook(pcl::PointCloud<pcl::PointXYZ>* cloud, HookModel& model) {
+int drawHook(pcl::PointCloud<pcl::PointXYZRGB>* cloud, HookModel& model) {
 	int count = 0;
 
 	/// 1 直线
@@ -147,7 +144,7 @@ int drawHook(pcl::PointCloud<pcl::PointXYZ>* cloud, HookModel& model) {
 	for (size_t i = 1; i <= model.div; i++)
 	{
 		float x = model.line_length * i / model.div;
-		pcl::PointXYZ point;
+		pcl::PointXYZRGB point;
 		point.x = x;
 		point.y = 0;
 		point.z = 0;
@@ -160,7 +157,7 @@ int drawHook(pcl::PointCloud<pcl::PointXYZ>* cloud, HookModel& model) {
 		float x = model.d * i / model.div + model.line_length;
 		float z = -std::sqrt((model.d / 2) * (model.d / 2) - (model.d * i / model.div - model.d / 2) * (model.d * i / model.div - model.d / 2));
 		float y = 0;
-		pcl::PointXYZ point;
+		pcl::PointXYZRGB point;
 		point.x = x;
 		point.y = y;
 		point.z = z;
@@ -174,25 +171,37 @@ int drawHook(pcl::PointCloud<pcl::PointXYZ>* cloud, HookModel& model) {
 		float x = model.d * sin(alpha) + model.line_length;
 		float z = model.d * cos(alpha);
 		float y = 0;
-		pcl::PointXYZ point;
+		pcl::PointXYZRGB point;
 		point.x = x;
 		point.y = y;
 		point.z = z;
 		Eigen::Vector3f t(x, y, z);
 		hooks.push_back(t);
 	}
+	Eigen::Vector3f hook_left_after = (model.p_b_left - model.p_a_left).normalized();
+	Eigen::Vector3f hook_left_before(1, 0, 0);
+	Eigen::Vector3f hook_left_axis = hook_left_before.cross(hook_left_after);
+	float hook_left_angle = std::acos(hook_left_before.dot(hook_left_after));
 
+	Eigen::AngleAxisf hook_left_angel_axis(hook_left_angle, hook_left_axis);
+	auto hook_left_rotation = hook_left_angel_axis.toRotationMatrix();
+
+
+	Eigen::Vector3f hook_origin_ahead_n(0, 0, 1);
+	Eigen::Vector3f hook_before_ahead_n = hook_left_rotation * hook_origin_ahead_n.normalized();
 	Eigen::Vector3f hook_after_ahead_n = (model.p_b_left - model.p_a_left).cross(model.p_c_right - model.p_a_left).normalized();
-	Eigen::Vector3f hook_before_ahead_n(0, 0, 1);
-	Eigen::Vector3f hook_axis = hook_before_ahead_n.cross(hook_after_ahead_n);
+	Eigen::Vector3f hook_axis = hook_before_ahead_n.cross(hook_after_ahead_n).normalized();
 	float hook_angle = std::acos(hook_before_ahead_n.dot(hook_after_ahead_n));
-	if (hook_axis[2] < 0)
-	{
-		hook_angle = -hook_angle;
-	}
+	//if (((int)hook_axis[2] ^ (int)hook_left_after[2]) < 0)
+	//{
+	//	hook_angle = -hook_angle;
+	//}
 	Eigen::AngleAxisf hook_angel_axis(hook_angle, hook_axis);
 	auto hook_rotation = hook_angel_axis.toRotationMatrix();
-	auto hook_translation = (model.p_a_left + model.p_c_right) / 2;
+
+
+
+	Eigen::Vector3f hook_translation = (model.p_a_left + model.p_c_right) / 2;
 
 	for (auto& p : hooks) {
 		for (size_t i = 0; i < model.div; i++)
@@ -200,9 +209,12 @@ int drawHook(pcl::PointCloud<pcl::PointXYZ>* cloud, HookModel& model) {
 			float h_s = i < model.div / 2 ? std::asin((i + 1) / ((float)model.div / 2)) * (model.d_between_hooks / M_PI) : (M_PI - std::asin((model.div - i - 1) / (float)model.div * 2)) * (model.d_between_hooks / M_PI);
 
 			Eigen::Vector3f t_t_hoot(0, -model.d_between_hooks / 2 + h_s, 0);
-			Eigen::Vector3f l_t = hook_rotation * (p + t_t_hoot) + hook_translation;
+			Eigen::Vector3f l_t = hook_rotation*hook_left_rotation * (p + t_t_hoot) + hook_translation;
 
-			pcl::PointXYZ point;
+			pcl::PointXYZRGB point;
+			point.r = 255;
+			point.g = 255;
+			point.b = 255;
 			point.x = l_t[0];
 			point.y = l_t[1];
 			point.z = l_t[2];
