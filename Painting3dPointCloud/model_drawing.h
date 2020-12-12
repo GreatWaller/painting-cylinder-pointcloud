@@ -41,8 +41,8 @@ struct SphereModel
 	Eigen::Vector3f center;
 	float radius;
 	uint8_t r=255;
-	uint8_t g=255;
-	uint8_t b=255;
+	uint8_t g;
+	uint8_t b;
 	int div=128;
 };
 
@@ -117,7 +117,7 @@ int drawCircle(pcl::PointCloud<pcl::PointXYZRGB>* cloud, CircleModel& model) {
 	int count = 0;
 	Eigen::Vector3f circle_norm_before(0, 0, 1);
 	float angle = std::acos(circle_norm_before.dot(model.circelNorm));
-	Eigen::Vector3f axis = circle_norm_before.cross(model.circelNorm);
+	Eigen::Vector3f axis = circle_norm_before.cross(model.circelNorm).normalized();
 
 	Eigen::AngleAxisf angleAxis(angle, axis);
 	Eigen::Matrix3f rotation = angleAxis.toRotationMatrix();
@@ -190,7 +190,7 @@ int drawHook(pcl::PointCloud<pcl::PointXYZRGB>* cloud, HookModel& model) {
 	}
 	Eigen::Vector3f hook_left_after = (model.p_b_left - model.p_a_left).normalized();
 	Eigen::Vector3f hook_left_before(1, 0, 0);
-	Eigen::Vector3f hook_left_axis = hook_left_before.cross(hook_left_after);
+	Eigen::Vector3f hook_left_axis = hook_left_before.cross(hook_left_after).normalized();
 	float hook_left_angle = std::acos(hook_left_before.dot(hook_left_after));
 
 	Eigen::AngleAxisf hook_left_angel_axis(hook_left_angle, hook_left_axis);
@@ -202,11 +202,14 @@ int drawHook(pcl::PointCloud<pcl::PointXYZRGB>* cloud, HookModel& model) {
 	Eigen::Vector3f hook_after_ahead_n = (model.p_b_left - model.p_a_left).cross(model.p_c_right - model.p_a_left).normalized();
 	Eigen::Vector3f hook_axis = hook_before_ahead_n.cross(hook_after_ahead_n).normalized();
 	float hook_angle = std::acos(hook_before_ahead_n.dot(hook_after_ahead_n));
-	//if (((int)hook_axis[2] ^ (int)hook_left_after[2]) < 0)
-	//{
-	//	hook_angle = -hook_angle;
-	//}
-	Eigen::AngleAxisf hook_angel_axis(hook_angle, hook_axis);
+	//float a1 = hook_axis[2];
+	//float a2 = hook_left_after[2];
+	//auto t1 = *(int*)&a1 ^ *(int*)&a2;
+	if ((*(int*)&(hook_axis[2]) ^ *(int*)&(hook_left_after[2])) < 0)
+	{
+		hook_angle = -hook_angle;
+	}
+	Eigen::AngleAxisf hook_angel_axis(hook_angle, hook_left_after);
 	auto hook_rotation = hook_angel_axis.toRotationMatrix();
 
 

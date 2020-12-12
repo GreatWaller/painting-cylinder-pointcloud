@@ -46,18 +46,39 @@ int main() {
 	point_a.z = hookModel.p_a_left[2];
 	point_a.r = 255;
 	cloud->push_back(point_a);
+	SphereModel sphere_a;
+	sphere_a.center = Eigen::Vector3f(point_a.x, point_a.y, point_a.z);
+	sphere_a.radius = 0.001;
+	sphere_a.r = 255;
+	sphere_a.g = 0;
+	sphere_a.b = 0;
+	drawSphere(cloud.get(), sphere_a);
 	pcl::PointXYZRGB point_b;
 	point_b.x = hookModel.p_b_left[0];
 	point_b.y = hookModel.p_b_left[1];
 	point_b.z = hookModel.p_b_left[2];
 	point_b.r = 255;
 	cloud->push_back(point_b);
+	SphereModel sphere_b;
+	sphere_b.center = Eigen::Vector3f(point_b.x, point_b.y, point_b.z);
+	sphere_b.radius = 0.001;
+	sphere_b.r = 255;
+	sphere_b.g = 0;
+	sphere_b.b = 0;
+	drawSphere(cloud.get(), sphere_b);
 	pcl::PointXYZRGB point_c;
 	point_c.x = hookModel.p_c_right[0];
 	point_c.y = hookModel.p_c_right[1];
 	point_c.z = hookModel.p_c_right[2];
 	point_c.g = 255;
 	cloud->push_back(point_c);
+	SphereModel sphere_c;
+	sphere_c.center = Eigen::Vector3f(point_c.x, point_c.y, point_c.z);
+	sphere_c.radius = 0.001;
+	sphere_c.r = 0;
+	sphere_c.g = 255;
+	sphere_c.b = 0;
+	drawSphere(cloud.get(), sphere_c);
 	num_points += 3;
 	//cylinder
 	float r = .025;
@@ -323,12 +344,6 @@ int main() {
 	//	}
 	//	
 	//}
-
-	SphereModel sphere;
-	sphere.center=Eigen::Vector3f(2, 2, 2);
-	sphere.radius = 0.1;
-	drawSphere(cloud.get(), sphere);
-	
 
 	CylinderModel model;
 	model.belowPoint=Eigen::Vector3f(2., 2., 2.);
