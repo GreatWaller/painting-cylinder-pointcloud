@@ -34,6 +34,7 @@ struct HookModel
 	float d;
 	float d_between_hooks;
 	int div=128;
+	int h_div = 2;
 };
 
 struct SphereModel
@@ -44,6 +45,16 @@ struct SphereModel
 	uint8_t g;
 	uint8_t b;
 	int div=128;
+};
+
+struct HexagonModel
+{
+	Eigen::Vector3f center=Eigen::Vector3f(0,0,1);
+	Eigen::Vector3f centerline = Eigen::Vector3f(0, 0, 1);
+	float r;
+	float h;
+	int div = 16;
+	int h_div = 8;
 };
 
 int drawCylinder(pcl::PointCloud<pcl::PointXYZRGB>* cloud, CylinderModel& model, bool needCircle = 0) {
@@ -76,6 +87,9 @@ int drawCylinder(pcl::PointCloud<pcl::PointXYZRGB>* cloud, CylinderModel& model,
 			Eigen::Vector3f tt = cylinder_rotation * t + cylinder_traslation;
 
 			pcl::PointXYZRGB point;
+
+			point.g = 255;
+
 			point.x = tt[0];
 			point.y = tt[1];
 			point.z = tt[2];
@@ -100,6 +114,9 @@ int drawCylinder(pcl::PointCloud<pcl::PointXYZRGB>* cloud, CylinderModel& model,
 					Eigen::Vector3f t(x, y, z);
 					Eigen::Vector3f tt = cylinder_rotation * t + cylinder_traslation;
 					pcl::PointXYZRGB point;
+
+					point.g = 255;
+				
 					point.x = tt[0];
 					point.y = tt[1];
 					point.z = tt[2];
@@ -116,7 +133,7 @@ int drawCylinder(pcl::PointCloud<pcl::PointXYZRGB>* cloud, CylinderModel& model,
 int drawCircle(pcl::PointCloud<pcl::PointXYZRGB>* cloud, CircleModel& model) {
 	int count = 0;
 	Eigen::Vector3f circle_norm_before(0, 0, 1);
-	float angle = std::acos(circle_norm_before.dot(model.circelNorm));
+	float angle = std::acos(circle_norm_before.dot(model.circelNorm.normalized()));
 	Eigen::Vector3f axis = circle_norm_before.cross(model.circelNorm).normalized();
 
 	Eigen::AngleAxisf angleAxis(angle, axis);
@@ -140,7 +157,6 @@ int drawCircle(pcl::PointCloud<pcl::PointXYZRGB>* cloud, CircleModel& model) {
 		++count;
 		cloud->points.push_back(point);
 	}
-	cloud->width += count;
 	return count;
 }
 
@@ -217,9 +233,9 @@ int drawHook(pcl::PointCloud<pcl::PointXYZRGB>* cloud, HookModel& model) {
 	Eigen::Vector3f hook_translation = (model.p_a_left + model.p_c_right) / 2;
 
 	for (auto& p : hooks) {
-		for (size_t i = 0; i < model.div; i++)
+		for (size_t i = 0; i <= model.h_div; i++)
 		{
-			float h_s = i < model.div / 2 ? std::asin((i + 1) / ((float)model.div / 2)) * (model.d_between_hooks / M_PI) : (M_PI - std::asin((model.div - i - 1) / (float)model.div * 2)) * (model.d_between_hooks / M_PI);
+			float h_s = i < model.h_div / 2 ? std::asin((i ) / ((float)model.h_div / 2)) * (model.d_between_hooks / M_PI) : (M_PI - std::asin((model.h_div - i - 1) / (float)model.h_div * 2)) * (model.d_between_hooks / M_PI);
 
 			Eigen::Vector3f t_t_hoot(0, -model.d_between_hooks / 2 + h_s, 0);
 			Eigen::Vector3f l_t = hook_rotation*hook_left_rotation * (p + t_t_hoot) + hook_translation;
@@ -234,7 +250,6 @@ int drawHook(pcl::PointCloud<pcl::PointXYZRGB>* cloud, HookModel& model) {
 
 			++count;
 			cloud->points.push_back(point);
-			cloud->width += count;
 		}
 	}
 	return count;
@@ -262,9 +277,62 @@ int drawSphere(pcl::PointCloud<pcl::PointXYZRGB>* cloud, SphereModel& model) {
 			point.z = z+model.center[2];
 			++count;
 			cloud->points.push_back(point);
-			cloud->width += count;
 		}
 	}
+	return count;
+}
+
+int drawHexagon(pcl::PointCloud<pcl::PointXYZRGB>* cloud, HexagonModel& model) {
+	int count = 0;
+	Eigen::Vector3f nut_centerline = model.centerline.normalized();
+	Eigen::Vector3f nut_base(0, 0, 1);
+	Eigen::Vector3f nut_axis = nut_base.cross(nut_centerline).normalized();
+	float nut_angle = std::acos(nut_base.dot(nut_centerline));
+
+	Eigen::AngleAxisf nut_angel_axis(nut_angle, nut_axis);
+	Eigen::Matrix3f nut_rotation = nut_angel_axis.toRotationMatrix();
+	Eigen::Vector3f nut_translation = model.center - Eigen::Vector3f(0, 0, model.h / 2);
+
+	for (size_t h = 0; h <= model.h_div; h++)
+	{
+		float z = model.h * h / model.h_div;
+		for (size_t i = 0; i <= model.div; i++)
+		{
+			float x1 = (0.5 + 0.5 * i / model.div) * model.r;
+			float y1 = -std::sqrt(3.0) * (x1 - model.r);
+			float x2 = -x1;
+			float y2 = y1;
+			float x3 = -x1;
+			float y3 = -y1;
+			float x4 = x1;
+			float y4 = -y1;
+			float x5 = (-0.5 + (1.0) * i / model.div) * model.r;
+			float y5 = std::sqrt(3.0) / 2 * model.r;
+			float x6 = x5;
+			float y6 = -y5;
+
+			Eigen::Vector3f sixPoints[6];
+			sixPoints[0] = Eigen::Vector3f(x1, y1, z);
+			sixPoints[1] = Eigen::Vector3f(x2, y2, z);
+			sixPoints[2] = Eigen::Vector3f(x3, y3, z);
+			sixPoints[3] = Eigen::Vector3f(x4, y4, z);
+			sixPoints[4] = Eigen::Vector3f(x5, y5, z);
+			sixPoints[5] = Eigen::Vector3f(x6, y6, z);
+
+			for (size_t i = 0; i < 6; i++)
+			{
+				Eigen::Vector3f tt = nut_rotation * sixPoints[i] + nut_translation;
+				pcl::PointXYZRGB point;
+				point.x = tt[0];
+				point.y = tt[1];
+				point.z = tt[2];
+				point.g = 255;
+				cloud->points.push_back(point);
+				++count;
+			}
+		}
+	}
+	
 	return count;
 }
 

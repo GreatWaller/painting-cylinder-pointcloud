@@ -5,6 +5,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <pcl/pcl_macros.h>
+#include <atomic>
 
 int main()
 {
@@ -67,7 +68,36 @@ int main()
     qq.normalize();
     std::cout << qq.coeffs().transpose() << std::endl;
 
+    std::cout << "================================" << std::endl;
+    Eigen::Quaternionf q_take(0.6073137018021225, -0.5128772532430668, 0.3828096631747293, -0.4707268342566634);
+    Eigen::Quaternionf q_set(0.646157637389, -0.464940288088, 0.353282820274, -0.49142861644);
+    Eigen::Vector3f t_take(0.27385293090679175, -0.14985068977467274, -0.033165081109841126);
+    Eigen::Vector3f t_set(0.260764601012, -0.155166573029, -0.0417871643352);
+    auto r_take = q_take.toRotationMatrix();
+    auto r_set = q_set.toRotationMatrix();
+    Eigen::Vector3f t_s2t =  t_set- t_take;
+    Eigen::Vector3f p_s_l(0.08521182467550453, -0.08137313680622592, 0.9382136827433396);
+    Eigen::Vector3f p_t_l = (r_take.inverse())*(r_set * p_s_l + t_set)-t_take;
+    std::cout << "point p_s_l : " << p_t_l.transpose() << std::endl;
+    std::cout << "=============Isometry===================" << std::endl;
+    Eigen::Isometry3f t2w(q_take), s2w(q_set);
+    t2w.pretranslate(t_take);
+    s2w.pretranslate(t_set);
+    Eigen::Vector3f p_take = t2w * (s2w.inverse()) * p_s_l;
+    std::cout << "point p_take : " << p_t_l.transpose() << std::endl;
+    std::cout << "=============Isometry===================" << std::endl;
 
+    std::atomic_int a(0);
+    a=5;
+    std::cout << "a: "<< a << std::endl;
+
+    std::cout << "=============quaternion test===================" << std::endl;
+    Eigen::Matrix3d m3 =Eigen::Matrix3d::Identity();
+    Eigen::Quaterniond q_3(m3);
+    std::cout << "quaternion w: " << q_3.w() << std::endl;
+    std::cout << "quaternion x: " << q_3.x() << std::endl;
+    std::cout << "quaternion y: " << q_3.y() << std::endl;
+    std::cout << "quaternion z: " << q_3.z() << std::endl;
 
 }
 

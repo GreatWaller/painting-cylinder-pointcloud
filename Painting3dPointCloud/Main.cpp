@@ -29,7 +29,7 @@ int main() {
 	hookModel.line_length = .0474f;
 	hookModel.d = .013f;
 	hookModel.d_between_hooks = 0.05f;
-	hookModel.div = 32;
+	hookModel.div = 6;
 	//hookModel.p_a_left = Eigen::Vector3f(-1, -1, 1);
 	//hookModel.p_b_left = Eigen::Vector3f(-1, -1, 0);
 	//hookModel.p_c_right = Eigen::Vector3f(0, 0, 1);
@@ -352,16 +352,24 @@ int main() {
 	model.h = 2.0f;
 	model.r = 1.0f;
 	model.vane_count = 5;
-	model.vane_width = 0.3;
-	model.vane_div = 64;
+	model.vane_width = 0.3f;
+	model.vane_div = 2;
 	int num = drawCylinder(cloud.get(), model,true);
 	num_points += num;
 
+	//test hexagon
+	HexagonModel hexagon;
+	hexagon.r = 0.1f;
+	hexagon.h = 0.113f;
+	hexagon.center = Eigen::Vector3f(-0.04479, -0.03958, 0.3532);
+	hexagon.centerline = Eigen::Vector3f(0.12, 0.75, -0.63);
+	drawHexagon(cloud.get(), hexagon);
+
 	// Fill in the cloud data  
-	cloud->width = num_points;;
+	cloud->width = cloud->points.size();;
 	cloud->height = 1;
 	cloud->is_dense = false;
-	cloud->points.resize(cloud->width * cloud->height);
+	cloud->points.resize(cloud->width* cloud->height);
 	//PCL Visualizer
 	// Viewer  
 	pcl::visualization::PCLVisualizer viewer("Cloud Viewer");
