@@ -77,14 +77,17 @@ int main()
     auto r_set = q_set.toRotationMatrix();
     Eigen::Vector3f t_s2t =  t_set- t_take;
     Eigen::Vector3f p_s_l(0.08521182467550453, -0.08137313680622592, 0.9382136827433396);
-    Eigen::Vector3f p_t_l = (r_take.inverse())*(r_set * p_s_l + t_set)-t_take;
+    Eigen::Vector3f p_t_l = (r_take.inverse())*(r_set * p_s_l + t_set-t_take);
+    Eigen::Vector3f p_t_l_1 = q_take * q_set.inverse() * (p_s_l - t_set) + t_take;
     std::cout << "point p_s_l : " << p_t_l.transpose() << std::endl;
+    std::cout << "point p_s_l_1 : " << p_t_l_1.transpose() << std::endl;
     std::cout << "=============Isometry===================" << std::endl;
     Eigen::Isometry3f t2w(q_take), s2w(q_set);
     t2w.pretranslate(t_take);
     s2w.pretranslate(t_set);
-    Eigen::Vector3f p_take = t2w * (s2w.inverse()) * p_s_l;
-    std::cout << "point p_take : " << p_t_l.transpose() << std::endl;
+    //Eigen::Vector3f p_take = t2w * (s2w.inverse()) * p_s_l;
+    Eigen::Vector3f p_take = t2w.inverse() * s2w * p_s_l;
+    std::cout << "point p_take : " << p_take.transpose() << std::endl;
     std::cout << "=============Isometry===================" << std::endl;
 
     std::atomic_int a(0);
@@ -98,6 +101,40 @@ int main()
     std::cout << "quaternion x: " << q_3.x() << std::endl;
     std::cout << "quaternion y: " << q_3.y() << std::endl;
     std::cout << "quaternion z: " << q_3.z() << std::endl;
+
+    std::cout << "=============tf test===================" << std::endl;
+	//specialPosition:
+	//rotation:
+	//w: 0.605275200138
+	//x : -0.358029924719
+	//y : 0.358424319061
+	//z : -0.613993902746
+	//translation :
+	//    x : 0.266247931844
+	//    y : -0.193629556355
+	//	z : -0.0253832224431
+    Eigen::Quaterniond q_0(0.605275200138, -0.358029924719, 0.358424319061, -0.613993902746);
+    Eigen::Vector3d t_0(0.266247931844, -0.193629556355, -0.0253832224431);
+    Eigen::Isometry3d camera2base(q_0);
+    camera2base.pretranslate(t_0);
+
+    std::cout << "camera to arm -> " << "\n" << camera2base.matrix() << std::endl;
+    std::cout << "arm to camera " << "\n" << camera2base.inverse().matrix() << std::endl;
+    //-Translation: [0.217, -0.260, -0.188]
+    //    - Rotation : in Quaternion[0.000, -0.000, 0.707, 0.707]
+    //    in RPY(radian)[-0.000, -0.000, 1.571]
+    //    in RPY(degree)[-0.000, -0.000, 90.010]
+
+    Eigen::Quaterniond pitch2base_q(0.000, -0.000, 0.707, 0.707);
+    Eigen::Vector3d pitch2base_t(0.217, -0.260, -0.188);
+    Eigen::Isometry3d pitch2base(pitch2base_q);
+    pitch2base.pretranslate(pitch2base_t);
+
+    std::cout << "camera to pitch 1" << "\n" << camera2base* pitch2base.matrix() << std::endl;
+    std::cout << "camera to pitch 2" << "\n" << camera2base * pitch2base.inverse().matrix() << std::endl;
+    std::cout << "camera to pitch 3-> true" << "\n" << camera2base.inverse() * pitch2base.matrix() << std::endl;
+    std::cout << "camera to pitch 4" << "\n" << camera2base.inverse() * pitch2base.inverse().matrix() << std::endl;
+
 
 }
 
