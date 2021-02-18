@@ -156,4 +156,44 @@ int main()
 	std::cout << "[ center : " << center.transpose() << "]" << std::endl;
 	double r = std::sqrt(x[0] * x[0] / 4 + x[1] * x[1] / 4 - x[2]);
 	std::cout << "[ r = " << r << "]" << std::endl;
+
+	std::cout << "============垂直转轴=======================" << std::endl;
+	//垂直转轴
+	Eigen::Vector3d point_up(1, 1, 1);
+	Eigen::Vector3d point_h(1, 2, 2);
+	Eigen::Vector3d point_down(1, 3, 1);
+	std::vector<Eigen::Vector3d> points_v;
+	points_v.push_back(point_up);
+	points_v.push_back(point_h);
+	points_v.push_back(point_down);
+
+	Eigen::MatrixXd A_v(5, 3);
+	for (size_t i = 0; i < points_v.size(); i++)
+	{
+		A_v(i, 0) = points_v[i][1];
+		A_v(i, 1) = points_v[i][2];
+		A_v(i, 2) = 1;
+	}
+	A_v.conservativeResize(points_v.size(), 3);
+	std::cout << "[" << A_v << "]" << std::endl;
+
+	// B_v
+	Eigen::VectorXd B_v(points_v.size());
+	for (size_t i = 0; i < points_v.size(); i++)
+	{
+		B_v[i] = -points_v[i][1] * points_v[i][1] - points_v[i][2] * points_v[i][2];
+	}
+	std::cout << "[" << B_v << "]" << std::endl;
+
+	// solve
+	Eigen::VectorXd x_v(3);
+	x_v = A_v.inverse() * B_v;
+	std::cout << "[" << x_v.transpose() << "]" << std::endl;
+
+	// 圆心
+	std::cout << "===================================" << std::endl;
+	Eigen::Vector3d center_v(-x_v[0] / 2, -x_v[1] / 2, 0);
+	std::cout << "[ center_v : " << center_v.transpose() << "]" << std::endl;
+	double r_v = std::sqrt(x_v[0] * x_v[0] / 4 + x_v[1] * x_v[1] / 4 - x_v[2]);
+	std::cout << "[ r_v = " << r_v << "]" << std::endl;
 }
