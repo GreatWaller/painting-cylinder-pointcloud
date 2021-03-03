@@ -5,6 +5,7 @@
 #include <vector>
 #include <Eigen/Core>
 #include <Eigen/Dense>
+#include <numeric>
 
 struct PositionAndOrientation
 {
@@ -159,20 +160,54 @@ int main()
 
 	std::cout << "============垂直转轴=======================" << std::endl;
 	//垂直转轴
-	Eigen::Vector3d point_up(1, 1, 1);
-	Eigen::Vector3d point_h(1, 2, 2);
-	Eigen::Vector3d point_down(1, 3, 1);
+	//Eigen::Vector3d point_up(0.224505429, -0.170643572, -0.032859093);
+	//Eigen::Vector3d point_h(0.290420009, -0.139296639, -0.076371991);
+	//Eigen::Vector3d point_down(0.155309951, -0.22242018, -0.027693504);
+	Eigen::Vector3d point_up(0.338657836,
+		-0.192789209,
+		-0.075688078
+	);
+	Eigen::Vector3d point_h(0.294172575,
+		-0.192420403,
+		-0.041786971
+	);
+	Eigen::Vector3d point_down(0.270876183,
+		-0.193191352,
+		-0.02973899
+	);
+	Eigen::Vector3d point4(0.242313147,
+		-0.193644409,
+		-0.024793852
+	);
+	Eigen::Vector3d point5(0.185425518,
+		-0.192453816,
+		-0.027606677
+	);
 	std::vector<Eigen::Vector3d> points_v;
 	points_v.push_back(point_up);
 	points_v.push_back(point_h);
 	points_v.push_back(point_down);
-
-	Eigen::MatrixXd A_v(5, 3);
+	points_v.push_back(point4);
+	points_v.push_back(point5);
+#define _ORIGIN_ 0
+#if _ORIGIN_
+	// 因未在转台0位标定（左转30度），需要做相应转换
+	Eigen::Vector3d axis(0, 0, 1);
+	Eigen::AngleAxisd aa(EIGEN_PI / 6, axis);
+	Eigen::Matrix3d R = aa.toRotationMatrix();
 	for (size_t i = 0; i < points_v.size(); i++)
 	{
-		A_v(i, 0) = points_v[i][1];
+		points_v[i] = R * points_v[i];
+	}
+#endif // 0
+	Eigen::MatrixXd A_v(5, 3);
+	double sum_x = 0;
+	for (size_t i = 0; i < points_v.size(); i++)
+	{
+		A_v(i, 0) = points_v[i][0];
 		A_v(i, 1) = points_v[i][2];
 		A_v(i, 2) = 1;
+		sum_x += points_v[i][1];
 	}
 	A_v.conservativeResize(points_v.size(), 3);
 	std::cout << "[" << A_v << "]" << std::endl;
@@ -181,19 +216,26 @@ int main()
 	Eigen::VectorXd B_v(points_v.size());
 	for (size_t i = 0; i < points_v.size(); i++)
 	{
-		B_v[i] = -points_v[i][1] * points_v[i][1] - points_v[i][2] * points_v[i][2];
+		B_v[i] = -points_v[i][0] * points_v[i][0] - points_v[i][2] * points_v[i][2];
 	}
 	std::cout << "[" << B_v << "]" << std::endl;
 
 	// solve
 	Eigen::VectorXd x_v(3);
-	x_v = A_v.inverse() * B_v;
+	/*auto AA = A_v.transpose() * A_v;
+	auto Ab = A_v.transpose() * B_v;*/
+	//x_v= AA.colPivHouseholderQr().solve(Ab);
+	//x_v = A_v.inverse() * B_v;
+	x_v = A_v.colPivHouseholderQr().solve(B_v);
 	std::cout << "[" << x_v.transpose() << "]" << std::endl;
-
 	// 圆心
 	std::cout << "===================================" << std::endl;
-	Eigen::Vector3d center_v(-x_v[0] / 2, -x_v[1] / 2, 0);
-	std::cout << "[ center_v : " << center_v.transpose() << "]" << std::endl;
 	double r_v = std::sqrt(x_v[0] * x_v[0] / 4 + x_v[1] * x_v[1] / 4 - x_v[2]);
 	std::cout << "[ r_v = " << r_v << "]" << std::endl;
+	//double center_x = std::accumulate(points_v.begin(), points_v.end(), 0, [](double a, double b)->double {return a[0] + b[0]; });
+	Eigen::Vector3d center_v(-x_v[0] / 2, sum_x/points_v.size(),  -x_v[1] / 2);
+	std::cout << "[ center_v : " << center_v.transpose() << "]" << std::endl;
+#if _ORIGIN_
+	std::cout << "[ center_v : " << (R.inverse()*center_v).transpose() << "]" << std::endl;
+#endif
 }
